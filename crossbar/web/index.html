@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+   <body>
+     <h1>Micro Task Dummy</h1>
+     <p>Question ID:</p>
+     <input type="text" id="questionIDInput"/>
+     <p>Question:</p>
+     <input type="text" id="questionInput"/>
+     <button id="questionButton"> Broadcast Question </button>
+     <p>Answer:</p>
+     <input type="text" id="answerInput"/>
+     <button id="answerButton"> Broadcast Answer </button>
+     <button id="testButton"> Test WAMP Meta data </button>
+     <script>AUTOBAHN_DEBUG = false;</script>
+     <script src="Scripts/autobahn.min.jgz"></script>
+
+      <script>
+         // the URL of the WAMP Router (Crossbar.io)
+         //
+         var wsuri;
+         if (document.location.origin == "file://") {
+            wsuri = "ws://127.0.0.1:8080/ws";
+
+         } else {
+            wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" +
+                        document.location.host + "/ws";
+         }
+
+         // the WAMP connection to the Router
+         //
+         var connection = new autobahn.Connection({
+            url: wsuri,
+            realm: "realm1"
+         });
+
+         var sessionHolder;
+
+         // fired when connection is established and session attached
+         //
+         connection.onopen = function (session, details) {
+            console.log("Connected");
+            sessionHolder = session;
+         };
+
+
+         // fired when connection was lost (or could not be established)
+         //
+         connection.onclose = function (reason, details) {
+            console.log("Connection lost: " + reason);
+         }
+
+         // now actually open the connection
+         //
+         connection.open();
+
+         function publishQuestion() {
+            var questionIDInput = document.getElementById("questionIDInput");
+            var questionInput = document.getElementById("questionInput");
+            var questionID = questionIDInput.value;
+            var question = questionInput.value;
+
+            sessionHolder.publish('MicroTaskUpdate', ["0", questionID, "0", question]);
+            console.log("published question to topic 'MicroTaskUpdate'");
+            console.log("Question ID: " + questionID + " Question: " + question);
+         }
+
+         function publishAnswer() {
+           var questionIDInput = document.getElementById("questionIDInput");
+           var answerInput = document.getElementById("answerInput");
+           var questionID = questionIDInput.value;
+           var answer = answerInput.value;
+
+            sessionHolder.publish('MicroTaskUpdate', ["0", questionID, "1", answer]);
+            console.log("published answer to topic 'MicroTaskUpdate'");
+            console.log("Question ID: " + questionID + " Answer: " + answer);
+         }
+
+         function testWAMP() {
+           sessionHolder.call('getAvailablePublishers').then(
+             function (availablePublishers) {
+               console.log(availablePublishers);
+             },
+             function (error) {
+               console.log('Call failed: ', error);
+             }
+           );
+           console.log(location);
+           if(location.port != ''){
+              console.log(location.port);
+           }
+           else if(location.protocol== 'http'){
+              console.log(80);
+           }
+           else if(location.protocol== 'https'){
+              console.log(443);
+           }
+         }
+
+         document.addEventListener("DOMContentLoaded", function() {
+           var questionButton = document.getElementById("questionButton");
+           questionButton.onclick=publishQuestion;
+
+           var answerButton = document.getElementById("answerButton");
+           answerButton.onclick=publishAnswer;
+
+           var testButton = document.getElementById("testButton");
+           testButton.onclick=testWAMP;
+         });
+      </script>
+
+   </body>
+</html>
